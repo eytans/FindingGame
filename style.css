@@ -30,10 +30,10 @@ h1#app-title {
 
 /* Game Container */
 #game-container {
-    width: 98vw;
-    max-width: 700px; /* Slightly smaller for better focus */
-    height: 70vh;
-    max-height: 550px;
+    width: 95vw;
+    max-width: 800px; /* Slightly smaller for better focus */
+    height: 85vh;
+    max-height: 650px;
     border: 2px solid white;
     border-radius: 20px; /* Rounded corners */
     box-shadow: 0 10px 25px rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.15);

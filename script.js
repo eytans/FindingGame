@@ -26,7 +26,7 @@ function loadBackgroundImage() {
         if (initialAttemptWasWithDynamicDimensions) {
             console.warn(`Initial attempt with dynamic dimensions (${width}x${height}) failed. Trying fallback 800x600. URL: ${img.src}`);
             initialAttemptWasWithDynamicDimensions = false; // Prevent retry loop
-                img.src = 'https://picsum.photos/picsum/800/600'; // Fallback
+                img.src = 'https://picsum.photos/800/600'; // Fallback
         } else {
             console.error(`Error loading background image from Unsplash. Also failed with fallback or fallback was initial. URL: ${img.src}`);
             if (imageArea) {
@@ -39,10 +39,10 @@ function loadBackgroundImage() {
     const height = imageArea.offsetHeight;
     if (width && height && !isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
         initialAttemptWasWithDynamicDimensions = true;
-        img.src = `https://picsum.photos/picsum/${width}/${height}`;
+        img.src = `https://picsum.photos/${width}/${height}`;
     } else {
         initialAttemptWasWithDynamicDimensions = false; // Ensure it's false if we go directly to fallback
-        img.src = 'https://picsum.photos/picsum/800/600'; // Fallback
+        img.src = 'https://picsum.photos/800/600'; // Fallback
     }
 }
 
@@ -56,13 +56,13 @@ const teachableWords = [
     // Original 20
     { word: "flower", type: "noun", iconUrl: "🌸" },
     { word: "circle", type: "shape", iconUrl: "●" },
-    { word: "red", type: "color", iconUrl: "🟥" },
+    { word: "red square", type: "color", iconUrl: "🟥" },
     { word: "tree", type: "noun", iconUrl: "🌳" },
     { word: "square", type: "shape", iconUrl: "■" },
-    { word: "blue", type: "color", iconUrl: "🟦" },
+    { word: "blue square", type: "color", iconUrl: "🟦" },
     { word: "sun", type: "noun", iconUrl: "☀️" },
     { word: "star", type: "shape", iconUrl: "⭐" },
-    { word: "yellow", type: "color", iconUrl: "🟨" },
+    { word: "yellow square", type: "color", iconUrl: "🟨" },
     { word: "car", type: "noun", iconUrl: "🚗" },
     { word: "cat", type: "animal", iconUrl: "🐱" },
     { word: "dog", type: "animal", iconUrl: "🐶" },
@@ -125,17 +125,16 @@ const teachableWords = [
     { word: "dance", type: "action", iconUrl: "💃" },
     { word: "sing", type: "action", iconUrl: "🎤" },
     { word: "read", type: "action", iconUrl: "📚" },
-    { word: "write", type: "action", iconUrl: "✏️" },
     { word: "play", type: "action", iconUrl: "▶️" }, // Generic play
     { word: "sleep", type: "action", iconUrl: "😴" },
     { word: "eat", type: "action", iconUrl: "🍽️" },
     { word: "drink", type: "action", iconUrl: "🥤" },
-    { word: "green", type: "color", iconUrl: "🟢" },
-    { word: "purple", type: "color", iconUrl: "🟣" },
-    { word: "orange", type: "color", iconUrl: "🟠" }, // Color orange
-    { word: "black", type: "color", iconUrl: "⚫" },
-    { word: "white", type: "color", iconUrl: "⚪" },
-    { word: "brown", type: "color", iconUrl: "🟤" },
+    { word: "green circle", type: "color", iconUrl: "🟢" },
+    { word: "purple circle", type: "color", iconUrl: "🟣" },
+    { word: "orange circle", type: "color", iconUrl: "🟠" }, // Color orange
+    { word: "black circle", type: "color", iconUrl: "⚫" },
+    { word: "white circle", type: "color", iconUrl: "⚪" },
+    { word: "brown circle", type: "color", iconUrl: "🟤" },
     { word: "pink", type: "color", iconUrl: "🩷" }, // Pink heart as proxy
     { word: "triangle", type: "shape", iconUrl: "🔺" },
     { word: "diamond", type: "shape", iconUrl: "💎" },
@@ -165,10 +164,10 @@ const MAX_OBJECTS_ON_SCREEN = 3;
 
 function initializeWordPool() {
     currentWords = []; // Clear
-    // Select 10 random words from teachableWords
+    // Select 20 random words from teachableWords
     const shuffledTeachable = [...teachableWords].sort(() => 0.5 - Math.random());
-    currentWords = shuffledTeachable.slice(0, 10);
-    console.log("Word pool initialized with 10 words.");
+    currentWords = shuffledTeachable.slice(0, 20);
+    console.log("Word pool initialized with 20 words.");
 }
 
 document.addEventListener('DOMContentLoaded', () => {
