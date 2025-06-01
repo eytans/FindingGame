@@ -77,17 +77,18 @@ h1#app-title {
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s; /* Elastic bounce */
     user-select: none;
     text-align: center;
-    /* min-width: 80px; /* Minimum width - adjust as needed for icons */
-    /* padding: 12px 18px; /* Adjust as needed for icons */
-    padding: 0; /* Remove padding if image fills the container */
-    width: 80px; /* Explicit width for icon container */
-    height: 80px; /* Explicit height for icon container */
-    /* font-size, font-weight, color might be irrelevant if only image is shown */
+    padding: 10px 15px; /* Add back padding */
+    min-width: 80px; /* Ensure a minimum size */
+    min-height: 80px; /* Ensure a minimum size */
+    display: flex; /* For centering content */
+    justify-content: center; /* For centering content */
+    align-items: center; /* For centering content */
+    /* font-size, font-weight, color are relevant for text/emoji */
 }
 
 .teachable-object img {
-    width: 100%; /* Make image fill the container */
-    height: 100%; /* Make image fill the container */
+    max-width: 60px; /* Constrain image size within padded box */
+    max-height: 60px; /* Constrain image size within padded box */
     object-fit: contain; /* Ensures whole image is visible */
     display: block; /* Remove extra space below image */
     border-radius: 12px; /* Match parent's border-radius if image has background */
@@ -106,6 +107,11 @@ h1#app-title {
     transform: scale(1.1);
     box-shadow: 0 0 15px #FFD700, 0 0 10px #FFD700 inset; /* Gold glow */
     border-color: #FFA500; /* Orange border */
+}
+
+.teachable-object.teachable-object-emoji {
+    font-size: 2.5em; /* Make emoji larger */
+    line-height: 1; /* Adjust line height for larger emojis */
 }
 
 /* Responsive Adjustments - if necessary */
