@@ -1,3 +1,34 @@
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+
+// Cross-platform speech wrapper
+async function speak(text, options = {}) {
+  if (window.Capacitor) {
+    // Mobile app - use Capacitor plugin
+    await TextToSpeech.speak({
+      text: text,
+      lang: options.lang || 'en-US',
+      rate: options.rate || 1.0,
+      pitch: options.pitch || 1.0,
+      volume: options.volume || 1.0
+    });
+  } else {
+    // Web browser - use Web Speech API
+    return new Promise((resolve, reject) => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (options.lang) utterance.lang = options.lang;
+      if (options.rate) utterance.rate = options.rate;
+      if (options.pitch) utterance.pitch = options.pitch;
+      if (options.volume) utterance.volume = options.volume;
+      
+      utterance.onend = () => resolve();
+      utterance.onerror = (error) => reject(error);
+      
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech
+      window.speechSynthesis.speak(utterance);
+    });
+  }
+}
+
 console.log("WordBubbles: Learn & Play loaded!");
 
 let preloadedImage = null;
@@ -210,58 +241,55 @@ function loadNextImage() {
     loadBackgroundImage();
 }
 
-function speakWord(word, element) {
-    const imageArea = document.getElementById('image-area'); // Ensure imageArea is accessible
-    if ('speechSynthesis' in window) {
-        wordsClickedCount++;
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(word);
+async function speakWord(word, element) {
+    const imageArea = document.getElementById('image-area');
+    wordsClickedCount++;
+    
+    if (element) {
+        element.classList.add('active');
+    }
+
+    try {
+        await speak(word, {
+            lang: 'en-US',
+            rate: 0.9,
+            pitch: 1.0,
+            volume: 1.0
+        });
+        
+        handleWordRemoval();
+    } catch (error) {
+        console.warn("Speech synthesis failed:", error);
+        alert("Sorry, speech synthesis failed. Please try again!");
         if (element) {
-            element.classList.add('active');
+            element.classList.remove('active');
         }
+    }
 
-        const handleWordRemoval = () => {
-            if (element && element.parentNode) { // Check if element exists and has a parent
-                element.classList.remove('active'); // Ensure class is removed
-                element.remove();
-            }
-            if (imageArea) {
-                const remainingObjects = imageArea.querySelectorAll('.teachable-object');
-                if (remainingObjects.length === 0) {
-                    setsCompletedCount++;
-                    if (setsCompletedCount >= 3) {
-                        loadNextImage();
-                        setsCompletedCount = 0;
-                        wordsClickedCount = 0; // Reset word click count
+    function handleWordRemoval() {
+        if (element && element.parentNode) {
+            element.classList.remove('active');
+            element.remove();
+        }
+        if (imageArea) {
+            const remainingObjects = imageArea.querySelectorAll('.teachable-object');
+            if (remainingObjects.length === 0) {
+                setsCompletedCount++;
+                if (setsCompletedCount >= 3) {
+                    loadNextImage();
+                    setsCompletedCount = 0;
+                    wordsClickedCount = 0;
 
-                        // Add 6 new unique words to currentWords
-                        const availableNewWords = teachableWords.filter(tw => !currentWords.some(cw => cw.word === tw.word));
-                        const shuffledAvailable = availableNewWords.sort(() => 0.5 - Math.random());
-                        const newWordsToAdd = shuffledAvailable.slice(0, 6);
-                        currentWords.push(...newWordsToAdd);
-                        console.log(`Added ${newWordsToAdd.length} new words. Current pool size: ${currentWords.length}`);
-                        // displayTeachableObjects() will be called by loadNextImage's onload, so no explicit call here.
-                    } else {
-                        displayTeachableObjects(); // Repopulate for the next set
-                    }
+                    const availableNewWords = teachableWords.filter(tw => !currentWords.some(cw => cw.word === tw.word));
+                    const shuffledAvailable = availableNewWords.sort(() => 0.5 - Math.random());
+                    const newWordsToAdd = shuffledAvailable.slice(0, 6);
+                    currentWords.push(...newWordsToAdd);
+                    console.log(`Added ${newWordsToAdd.length} new words. Current pool size: ${currentWords.length}`);
+                } else {
+                    displayTeachableObjects();
                 }
             }
-        };
-
-        utterance.onend = handleWordRemoval;
-
-        setTimeout(() => {
-            // Check if element still exists and is active, as onend might not have fired or completed
-            if (element && element.classList.contains('active')) { // Check .active specifically
-                console.log("setTimeout fallback triggered for word removal.");
-                handleWordRemoval();
-            }
-        }, 2000); // Timeout slightly longer than typical speech
-
-        window.speechSynthesis.speak(utterance);
-    } else {
-        console.warn("Speech synthesis not supported in this browser.");
-        alert("Sorry, your browser doesn't support the speech feature. Try Chrome or Firefox!");
+        }
     }
 }
 
@@ -334,14 +362,14 @@ function displayTeachableObjects() {
             console.warn("image-area has no dimensions, using percentage-based initial positioning.");
         }
 
-        objectElement.addEventListener('click', (event) => {
+        objectElement.addEventListener('click', async (event) => {
             const clickedWord = event.currentTarget.dataset.word;
             if (clickedWord && !event.currentTarget.dataset.clicked) { // Add clicked check
                 // Stop its movement by setting dx/dy to 0 before speaking and removing
                 event.currentTarget.dx = 0;
                 event.currentTarget.dy = 0;
                 event.currentTarget.dataset.clicked = 'true'; // Mark as clicked
-                speakWord(clickedWord, event.currentTarget);
+                await speakWord(clickedWord, event.currentTarget);
             }
         });
         imageArea.appendChild(objectElement);
@@ -410,13 +438,13 @@ function getRandomWords(wordsArray, count) {
 }
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')  // Updated path
-      .then(registration => {
+    .then(registration => {
         console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      })
-      .catch(error => {
+    })
+    .catch(error => {
         console.log('ServiceWorker registration failed: ', error);
-      });
-  });
+    });
+});
 }
