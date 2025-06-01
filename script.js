@@ -26,7 +26,7 @@ function loadBackgroundImage() {
         if (initialAttemptWasWithDynamicDimensions) {
             console.warn(`Initial attempt with dynamic dimensions (${width}x${height}) failed. Trying fallback 800x600. URL: ${img.src}`);
             initialAttemptWasWithDynamicDimensions = false; // Prevent retry loop
-            img.src = 'https://picsum.photos/seed/picsum/800/600'; // Fallback
+                img.src = 'https://picsum.photos/picsum/800/600'; // Fallback
         } else {
             console.error(`Error loading background image from Unsplash. Also failed with fallback or fallback was initial. URL: ${img.src}`);
             if (imageArea) {
@@ -39,20 +39,21 @@ function loadBackgroundImage() {
     const height = imageArea.offsetHeight;
     if (width && height && !isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
         initialAttemptWasWithDynamicDimensions = true;
-        img.src = `https://picsum.photos/seed/picsum/${width}/${height}`;
+        img.src = `https://picsum.photos/picsum/${width}/${height}`;
     } else {
         initialAttemptWasWithDynamicDimensions = false; // Ensure it's false if we go directly to fallback
-        img.src = 'https://picsum.photos/seed/picsum/800/600'; // Fallback
+        img.src = 'https://picsum.photos/picsum/800/600'; // Fallback
     }
 }
 
 let animationFrameId = null; // To control animation loop
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadBackgroundImage();
-});
+let wordsClickedCount = 0;
+let setsCompletedCount = 0;
+let currentWords = [];
 
 const teachableWords = [
+    // Original 20
     { word: "flower", type: "noun", iconUrl: "🌸" },
     { word: "circle", type: "shape", iconUrl: "●" },
     { word: "red", type: "color", iconUrl: "🟥" },
@@ -72,10 +73,108 @@ const teachableWords = [
     { word: "house", type: "place", iconUrl: "🏠" },
     { word: "ball", type: "toy", iconUrl: "⚽" },
     { word: "moon", type: "celestial", iconUrl: "🌙" },
-    { word: "hat", type: "clothing", iconUrl: "🧢" }
+    { word: "hat", type: "clothing", iconUrl: "🧢" },
+    // New 80 words
+    { word: "bird", type: "animal", iconUrl: "🐦" },
+    { word: "fish", type: "animal", iconUrl: "🐠" },
+    { word: "lion", type: "animal", iconUrl: "🦁" },
+    { word: "tiger", type: "animal", iconUrl: "🐅" },
+    { word: "bear", type: "animal", iconUrl: "🐻" },
+    { word: "elephant", type: "animal", iconUrl: "🐘" },
+    { word: "monkey", type: "animal", iconUrl: "🐒" },
+    { word: "horse", type: "animal", iconUrl: "🐎" },
+    { word: "cow", type: "animal", iconUrl: "🐄" },
+    { word: "pig", type: "animal", iconUrl: "🐖" },
+    { word: "orange", type: "food", iconUrl: "🍊" },
+    { word: "grape", type: "food", iconUrl: "🍇" },
+    { word: "strawberry", type: "food", iconUrl: "🍓" },
+    { word: "watermelon", type: "food", iconUrl: "🍉" },
+    { word: "pizza", type: "food", iconUrl: "🍕" },
+    { word: "burger", type: "food", iconUrl: "🍔" },
+    { word: "ice cream", type: "food", iconUrl: "🍦" },
+    { word: "cake", type: "food", iconUrl: "🍰" },
+    { word: "cookie", type: "food", iconUrl: "🍪" },
+    { word: "milk", type: "drink", iconUrl: "🥛" },
+    { word: "juice", type: "drink", iconUrl: "🧃" },
+    { word: "water", type: "drink", iconUrl: "💧" },
+    { word: "table", type: "furniture", iconUrl: "🪵" }, // Using wood log as proxy for table
+    { word: "bed", type: "furniture", iconUrl: "🛏️" },
+    { word: "sofa", type: "furniture", iconUrl: "🛋️" },
+    { word: "lamp", type: "furniture", iconUrl: "💡" },
+    { word: "shirt", type: "clothing", iconUrl: "👕" },
+    { word: "pants", type: "clothing", iconUrl: "👖" },
+    { word: "shoes", type: "clothing", iconUrl: "👟" },
+    { word: "dress", type: "clothing", iconUrl: "👗" },
+    { word: "socks", type: "clothing", iconUrl: "🧦" },
+    { word: "train", type: "vehicle", iconUrl: "🚆" },
+    { word: "bus", type: "vehicle", iconUrl: "🚌" },
+    { word: "bicycle", type: "vehicle", iconUrl: "🚲" },
+    { word: "boat", type: "vehicle", iconUrl: "⛵" },
+    { word: "airplane", type: "vehicle", iconUrl: "✈️" },
+    { word: "helicopter", type: "vehicle", iconUrl: "🚁" },
+    { word: "rocket", type: "vehicle", iconUrl: "🚀" },
+    { word: "happy", type: "emotion", iconUrl: "😊" },
+    { word: "sad", type: "emotion", iconUrl: "😢" },
+    { word: "angry", type: "emotion", iconUrl: "😠" },
+    { word: "surprised", type: "emotion", iconUrl: "😮" },
+    { word: "love", type: "emotion", iconUrl: "❤️" },
+    { word: "laugh", type: "action", iconUrl: "😂" },
+    { word: "cry", type: "action", iconUrl: "😭" },
+    { word: "run", type: "action", iconUrl: "🏃" },
+    { word: "jump", type: "action", iconUrl: "🤸" },
+    { word: "dance", type: "action", iconUrl: "💃" },
+    { word: "sing", type: "action", iconUrl: "🎤" },
+    { word: "read", type: "action", iconUrl: "📚" },
+    { word: "write", type: "action", iconUrl: "✏️" },
+    { word: "play", type: "action", iconUrl: "▶️" }, // Generic play
+    { word: "sleep", type: "action", iconUrl: "😴" },
+    { word: "eat", type: "action", iconUrl: "🍽️" },
+    { word: "drink", type: "action", iconUrl: "🥤" },
+    { word: "green", type: "color", iconUrl: "🟢" },
+    { word: "purple", type: "color", iconUrl: "🟣" },
+    { word: "orange", type: "color", iconUrl: "🟠" }, // Color orange
+    { word: "black", type: "color", iconUrl: "⚫" },
+    { word: "white", type: "color", iconUrl: "⚪" },
+    { word: "brown", type: "color", iconUrl: "🟤" },
+    { word: "pink", type: "color", iconUrl: "🩷" }, // Pink heart as proxy
+    { word: "triangle", type: "shape", iconUrl: "🔺" },
+    { word: "diamond", type: "shape", iconUrl: "💎" },
+    { word: "oval", type: "shape", iconUrl: "🥚" }, // Egg as proxy for oval
+    { word: "heart", type: "shape", iconUrl: "❤️" }, // Shape heart
+    { word: "cloud", type: "nature", iconUrl: "☁️" },
+    { word: "rain", type: "nature", iconUrl: "🌧️" },
+    { word: "snow", type: "nature", iconUrl: "❄️" },
+    { word: "mountain", type: "nature", iconUrl: "⛰️" },
+    { word: "river", type: "nature", iconUrl: "🏞️" }, // National park as proxy
+    { word: "ocean", type: "nature", iconUrl: "🌊" },
+    { word: "fire", type: "nature", iconUrl: "🔥" },
+    { word: "earth", type: "celestial", iconUrl: "🌍" },
+    { word: "computer", type: "object", iconUrl: "💻" },
+    { word: "phone", type: "object", iconUrl: "📱" },
+    { word: "key", type: "object", iconUrl: "🔑" },
+    { word: "door", type: "object", iconUrl: "🚪" },
+    { word: "window", type: "object", iconUrl: "🖼️" }, // Framed picture as proxy
+    { word: "clock", type: "object", iconUrl: "⏰" },
+    { word: "guitar", type: "instrument", iconUrl: "🎸" },
+    { word: "piano", type: "instrument", iconUrl: "🎹" },
+    { word: "drum", type: "instrument", iconUrl: "🥁" },
+    { word: "pencil", type: "tool", iconUrl: "✏️" }
 ];
 
 const MAX_OBJECTS_ON_SCREEN = 3;
+
+function initializeWordPool() {
+    currentWords = []; // Clear
+    // Select 10 random words from teachableWords
+    const shuffledTeachable = [...teachableWords].sort(() => 0.5 - Math.random());
+    currentWords = shuffledTeachable.slice(0, 10);
+    console.log("Word pool initialized with 10 words.");
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadBackgroundImage();
+    initializeWordPool();
+});
 
 function loadNextImage() {
     loadBackgroundImage();
@@ -84,36 +183,51 @@ function loadNextImage() {
 function speakWord(word, element) {
     const imageArea = document.getElementById('image-area'); // Ensure imageArea is accessible
     if ('speechSynthesis' in window) {
+        wordsClickedCount++;
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
         if (element) {
             element.classList.add('active');
         }
-        utterance.onend = () => {
-            if (element) {
-                element.classList.remove('active');
+
+        const handleWordRemoval = () => {
+            if (element && element.parentNode) { // Check if element exists and has a parent
+                element.classList.remove('active'); // Ensure class is removed
                 element.remove();
-                if (imageArea) { // Check if imageArea is valid
-                    const remainingObjects = imageArea.querySelectorAll('.teachable-object');
-                    if (remainingObjects.length === 0) {
+            }
+            if (imageArea) {
+                const remainingObjects = imageArea.querySelectorAll('.teachable-object');
+                if (remainingObjects.length === 0) {
+                    setsCompletedCount++;
+                    if (setsCompletedCount >= 3) {
                         loadNextImage();
+                        setsCompletedCount = 0;
+                        wordsClickedCount = 0; // Reset word click count
+
+                        // Add 6 new unique words to currentWords
+                        const availableNewWords = teachableWords.filter(tw => !currentWords.some(cw => cw.word === tw.word));
+                        const shuffledAvailable = availableNewWords.sort(() => 0.5 - Math.random());
+                        const newWordsToAdd = shuffledAvailable.slice(0, 6);
+                        currentWords.push(...newWordsToAdd);
+                        console.log(`Added ${newWordsToAdd.length} new words. Current pool size: ${currentWords.length}`);
+                        // displayTeachableObjects() will be called by loadNextImage's onload, so no explicit call here.
+                    } else {
+                        displayTeachableObjects(); // Repopulate for the next set
                     }
                 }
             }
         };
+
+        utterance.onend = handleWordRemoval;
+
         setTimeout(() => {
-            // Check if element still exists and is active, as onend might have already handled it
-            if (element && element.parentNode && element.classList.contains('active')) {
-                element.classList.remove('active');
-                element.remove();
-                if (imageArea) { // Check if imageArea is valid
-                    const remainingObjects = imageArea.querySelectorAll('.teachable-object');
-                    if (remainingObjects.length === 0) {
-                        loadNextImage();
-                    }
-                }
+            // Check if element still exists and is active, as onend might not have fired or completed
+            if (element && element.classList.contains('active')) { // Check .active specifically
+                console.log("setTimeout fallback triggered for word removal.");
+                handleWordRemoval();
             }
-        }, 2000);
+        }, 2000); // Timeout slightly longer than typical speech
+
         window.speechSynthesis.speak(utterance);
     } else {
         console.warn("Speech synthesis not supported in this browser.");
@@ -134,7 +248,18 @@ function displayTeachableObjects() {
         // For now, we'll let them overlap or be less visible if background fails.
     }
 
-    const wordsToDisplay = getRandomWords(teachableWords, MAX_OBJECTS_ON_SCREEN);
+    // Ensure there are words to display, if not, re-initialize pool (should be rare)
+    if (currentWords.length === 0) {
+        console.warn("CurrentWords is empty, re-initializing pool.");
+        initializeWordPool();
+        // If still empty, then teachableWords is empty or too small, which is a bigger issue.
+        if (currentWords.length === 0) {
+            console.error("Failed to populate currentWords even after re-initialization. Check teachableWords.");
+            return; // Cannot display objects
+        }
+    }
+
+    const wordsToDisplay = getRandomWords(currentWords, MAX_OBJECTS_ON_SCREEN);
 
     wordsToDisplay.forEach(item => {
         const objectElement = document.createElement('div');
