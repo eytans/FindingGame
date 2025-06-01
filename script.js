@@ -30,8 +30,10 @@ function loadBackgroundImage() {
         }
         displayTeachableObjects(); // Still display words even if image fails
     };
-    img.src = 'https://source.unsplash.com/random/700x550?nature,water,sky&cache_bust=' + new Date().getTime();
+    img.src = `https://picsum.photos/seed/picsum/${imageArea.offsetWidth}/${imageArea.offsetHeight}`;
 }
+
+let animationFrameId = null; // To control animation loop
 
 document.addEventListener('DOMContentLoaded', () => {
     loadBackgroundImage();
@@ -141,32 +143,97 @@ function displayTeachableObjects() {
             }
         }
 
+        // Set initial random position and velocity for animation
+        objectElement.dx = (Math.random() - 0.5) * 2; // Velocity for x-axis (pixels per frame)
+        objectElement.dy = (Math.random() - 0.5) * 2; // Velocity for y-axis (pixels per frame)
+
         // Ensure imageArea has dimensions before trying to place objects
         const areaWidth = imageArea.offsetWidth;
         const areaHeight = imageArea.offsetHeight;
+        const objectWidth = objectElement.offsetWidth || 120; // Use actual or default if not rendered yet
+        const objectHeight = objectElement.offsetHeight || 120;
 
         if (areaWidth > 0 && areaHeight > 0) {
-            const maxX = areaWidth - 100; // 100 is object width guess
-            const maxY = areaHeight - 40;  // 40 is object height guess
+            // Ensure objects are placed fully within bounds initially
+            const maxX = areaWidth - objectWidth;
+            const maxY = areaHeight - objectHeight;
             objectElement.style.left = `${Math.random() * Math.max(0, maxX)}px`;
             objectElement.style.top = `${Math.random() * Math.max(0, maxY)}px`;
         } else {
             // Fallback if imageArea has no dimensions (e.g., display:none or not yet rendered)
-            // This might happen if displayTeachableObjects is called too early or imageArea is hidden
-            objectElement.style.left = `${Math.random() * 50 + 25}%`; // Percentage based as a rough fallback
+            objectElement.style.left = `${Math.random() * 50 + 25}%`; // Percentage based
             objectElement.style.top = `${Math.random() * 50 + 25}%`;
-            console.warn("image-area has no dimensions, using percentage-based positioning for objects.");
+            console.warn("image-area has no dimensions, using percentage-based initial positioning.");
         }
 
         objectElement.addEventListener('click', (event) => {
             const clickedWord = event.currentTarget.dataset.word;
             if (clickedWord) {
+                // Stop its movement by setting dx/dy to 0 before speaking and removing
+                event.currentTarget.dx = 0;
+                event.currentTarget.dy = 0;
                 speakWord(clickedWord, event.currentTarget);
             }
         });
         imageArea.appendChild(objectElement);
     });
+
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+    animationFrameId = requestAnimationFrame(updateIconPositions);
 }
+
+
+function updateIconPositions() {
+    const imageArea = document.getElementById('image-area');
+    if (!imageArea) return;
+
+    const icons = imageArea.querySelectorAll('.teachable-object');
+    const areaWidth = imageArea.offsetWidth;
+    const areaHeight = imageArea.offsetHeight;
+
+    icons.forEach(icon => {
+        if (!icon.parentNode) return; // Skip if icon was removed (e.g. by speakWord)
+
+        let currentLeft = parseFloat(icon.style.left || 0);
+        let currentTop = parseFloat(icon.style.top || 0);
+        const iconWidth = icon.offsetWidth;
+        const iconHeight = icon.offsetHeight;
+
+        // Update position
+        currentLeft += icon.dx || 0;
+        currentTop += icon.dy || 0;
+
+        // Collision detection and response
+        // Left edge
+        if (currentLeft < 0) {
+            currentLeft = 0;
+            icon.dx *= -1;
+        }
+        // Right edge
+        if (currentLeft + iconWidth > areaWidth) {
+            currentLeft = areaWidth - iconWidth;
+            icon.dx *= -1;
+        }
+        // Top edge
+        if (currentTop < 0) {
+            currentTop = 0;
+            icon.dy *= -1;
+        }
+        // Bottom edge
+        if (currentTop + iconHeight > areaHeight) {
+            currentTop = areaHeight - iconHeight;
+            icon.dy *= -1;
+        }
+
+        icon.style.left = `${currentLeft}px`;
+        icon.style.top = `${currentTop}px`;
+    });
+
+    animationFrameId = requestAnimationFrame(updateIconPositions);
+}
+
 
 function getRandomWords(wordsArray, count) {
     const shuffled = [...wordsArray].sort(() => 0.5 - Math.random());
