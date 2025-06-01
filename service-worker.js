@@ -6,7 +6,6 @@ const urlsToCache = [
   'script.js',
   // Add paths to any local icons if you have them, e.g., 'icons/icon-192x192.png'
   // For now, we'll assume icons are served or this list can be expanded later.
-  'https://fonts.gstatic.com/s/lato/v16/S6uyw4BMUTPHjx4wWw.woff2' // Example of caching a Google Font if used
 ];
 
 // Install event: Cache essential assets
