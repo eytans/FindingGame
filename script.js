@@ -26,7 +26,7 @@ function loadBackgroundImage() {
         if (initialAttemptWasWithDynamicDimensions) {
             console.warn(`Initial attempt with dynamic dimensions (${width}x${height}) failed. Trying fallback 800x600. URL: ${img.src}`);
             initialAttemptWasWithDynamicDimensions = false; // Prevent retry loop
-                img.src = 'https://picsum.photos/800/600'; // Fallback
+                img.src = 'https://picsum.photos/800/600?timestamp=' + new Date().getTime(); // Fallback
         } else {
             console.error(`Error loading background image from Unsplash. Also failed with fallback or fallback was initial. URL: ${img.src}`);
             if (imageArea) {
@@ -39,10 +39,10 @@ function loadBackgroundImage() {
     const height = imageArea.offsetHeight;
     if (width && height && !isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
         initialAttemptWasWithDynamicDimensions = true;
-        img.src = `https://picsum.photos/${width}/${height}`;
+        img.src = `https://picsum.photos/${width}/${height}?timestamp=${new Date().getTime()}`;
     } else {
         initialAttemptWasWithDynamicDimensions = false; // Ensure it's false if we go directly to fallback
-        img.src = 'https://picsum.photos/800/600'; // Fallback
+        img.src = 'https://picsum.photos/800/600?timestamp=' + new Date().getTime(); // Fallback
     }
 }
 
