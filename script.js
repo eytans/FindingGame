@@ -86,7 +86,7 @@ const teachableWords = [
     { word: "cow", type: "animal", iconUrl: "🐄" },
     { word: "pig", type: "animal", iconUrl: "🐖" },
     { word: "orange", type: "food", iconUrl: "🍊" },
-    { word: "grape", type: "food", iconUrl: "🍇" },
+    { word: "grapes", type: "food", iconUrl: "🍇" },
     { word: "strawberry", type: "food", iconUrl: "🍓" },
     { word: "watermelon", type: "food", iconUrl: "🍉" },
     { word: "pizza", type: "food", iconUrl: "🍕" },
@@ -97,13 +97,13 @@ const teachableWords = [
     { word: "milk", type: "drink", iconUrl: "🥛" },
     { word: "juice", type: "drink", iconUrl: "🧃" },
     { word: "water", type: "drink", iconUrl: "💧" },
-    { word: "table", type: "furniture", iconUrl: "🪵" }, // Using wood log as proxy for table
+    // { word: "tree trunk", type: "furniture", iconUrl: "🪵" }, // Using wood log as proxy for table
     { word: "bed", type: "furniture", iconUrl: "🛏️" },
     { word: "sofa", type: "furniture", iconUrl: "🛋️" },
     { word: "lamp", type: "furniture", iconUrl: "💡" },
     { word: "shirt", type: "clothing", iconUrl: "👕" },
     { word: "pants", type: "clothing", iconUrl: "👖" },
-    { word: "shoes", type: "clothing", iconUrl: "👟" },
+    { word: "shoe", type: "clothing", iconUrl: "👟" },
     { word: "dress", type: "clothing", iconUrl: "👗" },
     { word: "socks", type: "clothing", iconUrl: "🧦" },
     { word: "train", type: "vehicle", iconUrl: "🚆" },
@@ -117,17 +117,17 @@ const teachableWords = [
     { word: "sad", type: "emotion", iconUrl: "😢" },
     { word: "angry", type: "emotion", iconUrl: "😠" },
     { word: "surprised", type: "emotion", iconUrl: "😮" },
-    { word: "love", type: "emotion", iconUrl: "❤️" },
+    // { word: "love", type: "emotion", iconUrl: "❤️" },
     { word: "laugh", type: "action", iconUrl: "😂" },
     { word: "cry", type: "action", iconUrl: "😭" },
     { word: "run", type: "action", iconUrl: "🏃" },
-    { word: "jump", type: "action", iconUrl: "🤸" },
+    // { word: "jump", type: "action", iconUrl: "🤸" },
     { word: "dance", type: "action", iconUrl: "💃" },
-    { word: "sing", type: "action", iconUrl: "🎤" },
-    { word: "read", type: "action", iconUrl: "📚" },
-    { word: "play", type: "action", iconUrl: "▶️" }, // Generic play
+    // { word: "sing", type: "action", iconUrl: "🎤" },
+    { word: "books", type: "action", iconUrl: "📚" },
+    // { word: "play", type: "action", iconUrl: "▶️" }, // Generic play
     { word: "sleep", type: "action", iconUrl: "😴" },
-    { word: "eat", type: "action", iconUrl: "🍽️" },
+    { word: "plate", type: "action", iconUrl: "🍽️" },
     { word: "drink", type: "action", iconUrl: "🥤" },
     { word: "green circle", type: "color", iconUrl: "🟢" },
     { word: "purple circle", type: "color", iconUrl: "🟣" },
@@ -135,24 +135,24 @@ const teachableWords = [
     { word: "black circle", type: "color", iconUrl: "⚫" },
     { word: "white circle", type: "color", iconUrl: "⚪" },
     { word: "brown circle", type: "color", iconUrl: "🟤" },
-    { word: "pink", type: "color", iconUrl: "🩷" }, // Pink heart as proxy
+    // { word: "pink", type: "color", iconUrl: "🩷" }, // Pink heart as proxy
     { word: "triangle", type: "shape", iconUrl: "🔺" },
     { word: "diamond", type: "shape", iconUrl: "💎" },
-    { word: "oval", type: "shape", iconUrl: "🥚" }, // Egg as proxy for oval
+    { word: "egg", type: "shape", iconUrl: "🥚" }, // Egg as proxy for oval
     { word: "heart", type: "shape", iconUrl: "❤️" }, // Shape heart
     { word: "cloud", type: "nature", iconUrl: "☁️" },
     { word: "rain", type: "nature", iconUrl: "🌧️" },
     { word: "snow", type: "nature", iconUrl: "❄️" },
     { word: "mountain", type: "nature", iconUrl: "⛰️" },
     { word: "river", type: "nature", iconUrl: "🏞️" }, // National park as proxy
-    { word: "ocean", type: "nature", iconUrl: "🌊" },
+    { word: "wave", type: "nature", iconUrl: "🌊" },
     { word: "fire", type: "nature", iconUrl: "🔥" },
     { word: "earth", type: "celestial", iconUrl: "🌍" },
     { word: "computer", type: "object", iconUrl: "💻" },
     { word: "phone", type: "object", iconUrl: "📱" },
     { word: "key", type: "object", iconUrl: "🔑" },
     { word: "door", type: "object", iconUrl: "🚪" },
-    { word: "window", type: "object", iconUrl: "🖼️" }, // Framed picture as proxy
+    { word: "picture", type: "object", iconUrl: "🖼️" }, // Framed picture as proxy
     { word: "clock", type: "object", iconUrl: "⏰" },
     { word: "guitar", type: "instrument", iconUrl: "🎸" },
     { word: "piano", type: "instrument", iconUrl: "🎹" },
