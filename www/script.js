@@ -1,49 +1,71 @@
 console.log("WordBubbles: Learn & Play loaded!");
 
+let preloadedImage = null;
+let currentImageId = null;
+
+function getRandomImageId() {
+    return Math.floor(Math.random() * 387) + 1;
+}
+
+function preloadNextImage() {
+    const width = document.getElementById('image-area')?.offsetWidth || 800;
+    const height = document.getElementById('image-area')?.offsetHeight || 600;
+    
+    const nextId = getRandomImageId();
+    const img = new Image();
+    
+    return new Promise((resolve, reject) => {
+        img.onload = () => {
+            preloadedImage = img;
+            currentImageId = nextId;
+            resolve(img);
+        };
+        img.onerror = reject;
+        img.src = `https://picsum.photos/id/${nextId}/${width}/${height}`;
+    });
+}
+
 function loadBackgroundImage() {
     const imageArea = document.getElementById('image-area');
     if (!imageArea) {
         console.error('Error: image-area element not found!');
         return;
     }
-    let initialAttemptWasWithDynamicDimensions = false;
 
-    // imageArea.style.backgroundColor = '#ddd'; // Placeholder
-    // imageArea.style.textAlign = 'center'; // From original
-    // imageArea.innerHTML = '<p style="padding-top: 50px;">Loading image...</p>'; // From original, will be cleared by img.onload
+    // Try to use preloaded image if available
+    if (preloadedImage) {
+        console.log(`Using preloaded background image: ${preloadedImage.src}`);
+        imageArea.innerHTML = ''; // Clear loading message
+        imageArea.style.backgroundImage = `url('${preloadedImage.src}')`;
+        preloadedImage = null; // Clear the preloaded image
+        // Start preloading next image for future use
+        preloadNextImage().catch(err => console.warn('Failed to preload next image:', err));
+        displayTeachableObjects();
+        return;
+    }
 
+    // If no preloaded image, load one directly
+    const width = imageArea.offsetWidth || 800;
+    const height = imageArea.offsetHeight || 600;
+    const imageId = getRandomImageId();
 
     const img = new Image();
     img.onload = () => {
-        console.log(`Background image from Unsplash loaded successfully: ${img.src}`);
-        if (imageArea) {
-            imageArea.innerHTML = ''; // Clear loading message
-            imageArea.style.backgroundImage = `url('${img.src}')`;
-        }
+        console.log(`Background image loaded successfully: ${img.src}`);
+        imageArea.innerHTML = ''; // Clear loading message
+        imageArea.style.backgroundImage = `url('${img.src}')`;
+        // Preload next image for future use
+        preloadNextImage().catch(err => console.warn('Failed to preload next image:', err));
         displayTeachableObjects();
     };
     img.onerror = () => {
-        if (initialAttemptWasWithDynamicDimensions) {
-            console.warn(`Initial attempt with dynamic dimensions (${width}x${height}) failed. Trying fallback 800x600. URL: ${img.src}`);
-            initialAttemptWasWithDynamicDimensions = false; // Prevent retry loop
-                img.src = 'https://picsum.photos/800/600?timestamp=' + new Date().getTime(); // Fallback
-        } else {
-            console.error(`Error loading background image from Unsplash. Also failed with fallback or fallback was initial. URL: ${img.src}`);
-            if (imageArea) {
-                imageArea.innerHTML = '<p style="text-align:center; padding-top: 50px; color: #555;">Could not load image from Unsplash. Enjoy the words on a plain background!</p>';
-            }
-            displayTeachableObjects(); // Still display words even if image fails
+        console.error(`Error loading background image. URL: ${img.src}`);
+        if (imageArea) {
+            imageArea.innerHTML = '<p style="text-align:center; padding-top: 50px; color: #555;">Could not load image. Enjoy the words on a plain background!</p>';
         }
+        displayTeachableObjects(); // Still display words even if image fails
     };
-    const width = imageArea.offsetWidth;
-    const height = imageArea.offsetHeight;
-    if (width && height && !isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
-        initialAttemptWasWithDynamicDimensions = true;
-        img.src = `https://picsum.photos/${width}/${height}?timestamp=${new Date().getTime()}`;
-    } else {
-        initialAttemptWasWithDynamicDimensions = false; // Ensure it's false if we go directly to fallback
-        img.src = 'https://picsum.photos/800/600?timestamp=' + new Date().getTime(); // Fallback
-    }
+    img.src = `https://picsum.photos/id/${imageId}/${width}/${height}`;
 }
 
 let animationFrameId = null; // To control animation loop
@@ -171,8 +193,17 @@ function initializeWordPool() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadBackgroundImage();
-    initializeWordPool();
+    // Preload first image before starting
+    preloadNextImage()
+        .then(() => {
+            loadBackgroundImage();
+            initializeWordPool();
+        })
+        .catch(err => {
+            console.warn('Failed to preload initial image:', err);
+            loadBackgroundImage(); // Fall back to direct loading
+            initializeWordPool();
+        });
 });
 
 function loadNextImage() {
@@ -305,10 +336,11 @@ function displayTeachableObjects() {
 
         objectElement.addEventListener('click', (event) => {
             const clickedWord = event.currentTarget.dataset.word;
-            if (clickedWord) {
+            if (clickedWord && !event.currentTarget.dataset.clicked) { // Add clicked check
                 // Stop its movement by setting dx/dy to 0 before speaking and removing
                 event.currentTarget.dx = 0;
                 event.currentTarget.dy = 0;
+                event.currentTarget.dataset.clicked = 'true'; // Mark as clicked
                 speakWord(clickedWord, event.currentTarget);
             }
         });
