@@ -77,7 +77,20 @@ h1#app-title {
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s; /* Elastic bounce */
     user-select: none;
     text-align: center;
-    min-width: 80px; /* Minimum width */
+    /* min-width: 80px; /* Minimum width - adjust as needed for icons */
+    /* padding: 12px 18px; /* Adjust as needed for icons */
+    padding: 0; /* Remove padding if image fills the container */
+    width: 80px; /* Explicit width for icon container */
+    height: 80px; /* Explicit height for icon container */
+    /* font-size, font-weight, color might be irrelevant if only image is shown */
+}
+
+.teachable-object img {
+    width: 100%; /* Make image fill the container */
+    height: 100%; /* Make image fill the container */
+    object-fit: contain; /* Ensures whole image is visible */
+    display: block; /* Remove extra space below image */
+    border-radius: 12px; /* Match parent's border-radius if image has background */
 }
 
 .teachable-object:hover,

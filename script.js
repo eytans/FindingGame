@@ -1,30 +1,47 @@
 console.log("Word Learner Game script loaded!");
 
-document.addEventListener('DOMContentLoaded', () => {
+const imageUrls = [
+    "images/image1.jpg",
+    "images/image2.jpg",
+    "images/image3.jpg",
+    "images/image4.jpg",
+    "images/image5.jpg",
+    "images/image6.jpg",
+    "images/image7.jpg",
+    "images/image8.jpg",
+    "images/image9.jpg",
+    "images/image10.jpg"
+];
+
+let currentImageIndex = 0;
+
+function loadBackgroundImage(index) {
     const imageArea = document.getElementById('image-area');
     if (!imageArea) {
         console.error('Error: image-area element not found!');
         return;
     }
 
-    // imageArea.style.backgroundColor = '#ddd'; // Placeholder from original, can be kept or removed
+    const imageIndex = (index !== undefined) ? index : currentImageIndex;
+    const imageUrl = imageUrls[imageIndex];
+
+    // imageArea.style.backgroundColor = '#ddd'; // Placeholder
     // imageArea.style.textAlign = 'center'; // From original
     // imageArea.innerHTML = '<p style="padding-top: 50px;">Loading image...</p>'; // From original, will be cleared by img.onload
 
-    const imageUrl = `https://source.unsplash.com/800x600/?nature`; // As per previous subtask
 
     const img = new Image();
     img.onload = () => {
-        console.log('Background image loaded successfully.');
-        if (imageArea) { // Check if imageArea is still valid
+        console.log(`Background image ${imageIndex} loaded successfully: ${imageUrl}`);
+        if (imageArea) {
             imageArea.innerHTML = ''; // Clear loading message
             imageArea.style.backgroundImage = `url('${imageUrl}')`;
         }
         displayTeachableObjects();
     };
     img.onerror = () => {
-        console.error('Error loading background image. Check network or Unsplash status.');
-        if (imageArea) { // Check if imageArea is still valid
+        console.error(`Error loading background image ${imageIndex}: ${imageUrl}. Check network or Unsplash status.`);
+        if (imageArea) {
             // imageArea.style.backgroundImage = ''; // Keep it simple
             // imageArea.style.backgroundColor = '#eee';
             imageArea.innerHTML = '<p style="text-align:center; padding-top: 50px; color: #555;">Could not load image. Enjoy the words on a plain background!</p>';
@@ -32,34 +49,44 @@ document.addEventListener('DOMContentLoaded', () => {
         displayTeachableObjects(); // Still display words even if image fails
     };
     img.src = imageUrl;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadBackgroundImage(currentImageIndex);
 });
 
 const teachableWords = [
-    { word: "flower", type: "noun" },
-    { word: "circle", type: "shape" },
-    { word: "red", type: "color" },
-    { word: "tree", type: "noun" },
-    { word: "square", type: "shape" },
-    { word: "blue", type: "color" },
-    { word: "sun", type: "noun" },
-    { word: "star", type: "shape" },
-    { word: "yellow", type: "color" },
-    { word: "car", type: "noun" },
-    { word: "cat", type: "animal" },
-    { word: "dog", type: "animal" },
-    { word: "apple", type: "food" },
-    { word: "banana", type: "food" },
-    { word: "book", type: "object" },
-    { word: "chair", type: "object" },
-    { word: "house", type: "place" },
-    { word: "ball", type: "toy" },
-    { word: "moon", type: "celestial" },
-    { word: "hat", type: "clothing" }
+    { word: "flower", type: "noun", iconUrl: "🌸" },
+    { word: "circle", type: "shape", iconUrl: "https://via.placeholder.com/50/FF0000/FFFFFF?Text=Circle" },
+    { word: "red", type: "color", iconUrl: "https://via.placeholder.com/50/FF0000/FFFFFF?Text=Red" }, // Placeholder, color itself is visual
+    { word: "tree", type: "noun", iconUrl: "🌳" },
+    { word: "square", type: "shape", iconUrl: "https://via.placeholder.com/50/00FF00/FFFFFF?Text=Square" },
+    { word: "blue", type: "color", iconUrl: "https://via.placeholder.com/50/0000FF/FFFFFF?Text=Blue" }, // Placeholder
+    { word: "sun", type: "noun", iconUrl: "☀️" },
+    { word: "star", type: "shape", iconUrl: "⭐" },
+    { word: "yellow", type: "color", iconUrl: "https://via.placeholder.com/50/FFFF00/000000?Text=Yellow" }, // Placeholder
+    { word: "car", type: "noun", iconUrl: "🚗" },
+    { word: "cat", type: "animal", iconUrl: "🐱" },
+    { word: "dog", type: "animal", iconUrl: "🐶" },
+    { word: "apple", type: "food", iconUrl: "🍎" },
+    { word: "banana", type: "food", iconUrl: "🍌" },
+    { word: "book", type: "object", iconUrl: "https://via.placeholder.com/50/A0522D/FFFFFF?Text=Book" },
+    { word: "chair", type: "object", iconUrl: "https://via.placeholder.com/50/8B4513/FFFFFF?Text=Chair" },
+    { word: "house", type: "place", iconUrl: "🏠" },
+    { word: "ball", type: "toy", iconUrl: "⚽" },
+    { word: "moon", type: "celestial", iconUrl: "🌙" },
+    { word: "hat", type: "clothing", iconUrl: "https://via.placeholder.com/50/333333/FFFFFF?Text=Hat" }
 ];
 
 const MAX_OBJECTS_ON_SCREEN = 3;
 
+function loadNextImage() {
+    currentImageIndex = (currentImageIndex + 1) % imageUrls.length;
+    loadBackgroundImage(currentImageIndex);
+}
+
 function speakWord(word, element) {
+    const imageArea = document.getElementById('image-area'); // Ensure imageArea is accessible
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
@@ -69,13 +96,26 @@ function speakWord(word, element) {
         utterance.onend = () => {
             if (element) {
                 element.classList.remove('active');
-                element.remove(); // Added line
+                element.remove();
+                if (imageArea) { // Check if imageArea is valid
+                    const remainingObjects = imageArea.querySelectorAll('.teachable-object');
+                    if (remainingObjects.length === 0) {
+                        loadNextImage();
+                    }
+                }
             }
         };
         setTimeout(() => {
-            if (element && element.classList.contains('active')) {
+            // Check if element still exists and is active, as onend might have already handled it
+            if (element && element.parentNode && element.classList.contains('active')) {
                 element.classList.remove('active');
-                element.remove(); // Added line
+                element.remove();
+                if (imageArea) { // Check if imageArea is valid
+                    const remainingObjects = imageArea.querySelectorAll('.teachable-object');
+                    if (remainingObjects.length === 0) {
+                        loadNextImage();
+                    }
+                }
             }
         }, 2000);
         window.speechSynthesis.speak(utterance);
@@ -103,8 +143,17 @@ function displayTeachableObjects() {
     wordsToDisplay.forEach(item => {
         const objectElement = document.createElement('div');
         objectElement.classList.add('teachable-object');
-        objectElement.textContent = item.word;
-        objectElement.dataset.word = item.word;
+        objectElement.dataset.word = item.word; // Keep this for click functionality
+
+        if (item.iconUrl) {
+            const imgElement = document.createElement('img');
+            imgElement.src = item.iconUrl;
+            imgElement.alt = item.word; // For accessibility
+            objectElement.appendChild(imgElement);
+        } else {
+            // Fallback if iconUrl is not defined (though it should be)
+            objectElement.textContent = item.word;
+        }
 
         // Ensure imageArea has dimensions before trying to place objects
         const areaWidth = imageArea.offsetWidth;
