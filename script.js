@@ -6,6 +6,7 @@ function loadBackgroundImage() {
         console.error('Error: image-area element not found!');
         return;
     }
+    let initialAttemptWasWithDynamicDimensions = false;
 
     // imageArea.style.backgroundColor = '#ddd'; // Placeholder
     // imageArea.style.textAlign = 'center'; // From original
@@ -22,15 +23,27 @@ function loadBackgroundImage() {
         displayTeachableObjects();
     };
     img.onerror = () => {
-        console.error(`Error loading background image from Unsplash. Check network or Unsplash status. URL: ${img.src}`);
-        if (imageArea) {
-            // imageArea.style.backgroundImage = ''; // Keep it simple
-            // imageArea.style.backgroundColor = '#eee';
-            imageArea.innerHTML = '<p style="text-align:center; padding-top: 50px; color: #555;">Could not load image from Unsplash. Enjoy the words on a plain background!</p>';
+        if (initialAttemptWasWithDynamicDimensions) {
+            console.warn(`Initial attempt with dynamic dimensions (${width}x${height}) failed. Trying fallback 800x600. URL: ${img.src}`);
+            initialAttemptWasWithDynamicDimensions = false; // Prevent retry loop
+            img.src = 'https://picsum.photos/seed/picsum/800/600'; // Fallback
+        } else {
+            console.error(`Error loading background image from Unsplash. Also failed with fallback or fallback was initial. URL: ${img.src}`);
+            if (imageArea) {
+                imageArea.innerHTML = '<p style="text-align:center; padding-top: 50px; color: #555;">Could not load image from Unsplash. Enjoy the words on a plain background!</p>';
+            }
+            displayTeachableObjects(); // Still display words even if image fails
         }
-        displayTeachableObjects(); // Still display words even if image fails
     };
-    img.src = `https://picsum.photos/seed/picsum/${imageArea.offsetWidth}/${imageArea.offsetHeight}`;
+    const width = imageArea.offsetWidth;
+    const height = imageArea.offsetHeight;
+    if (width && height && !isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
+        initialAttemptWasWithDynamicDimensions = true;
+        img.src = `https://picsum.photos/seed/picsum/${width}/${height}`;
+    } else {
+        initialAttemptWasWithDynamicDimensions = false; // Ensure it's false if we go directly to fallback
+        img.src = 'https://picsum.photos/seed/picsum/800/600'; // Fallback
+    }
 }
 
 let animationFrameId = null; // To control animation loop
