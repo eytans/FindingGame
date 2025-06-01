@@ -1,4 +1,4 @@
-const CACHE_NAME = 'word-learner-cache-v1';
+const CACHE_NAME = 'wordbubbles-cache-v1';
 const urlsToCache = [
   '/', // Alias for index.html
   'index.html',

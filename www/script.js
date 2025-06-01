@@ -1,4 +1,4 @@
-console.log("Word Learner Game script loaded!");
+console.log("WordBubbles: Learn & Play loaded!");
 
 function loadBackgroundImage() {
     const imageArea = document.getElementById('image-area');
@@ -379,7 +379,7 @@ function getRandomWords(wordsArray, count) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register('./service-worker.js')  // Updated path
       .then(registration => {
         console.log('ServiceWorker registration successful with scope: ', registration.scope);
       })

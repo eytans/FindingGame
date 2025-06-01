@@ -1,7 +1,7 @@
 {
-  "name": "Word Learner Game",
-  "short_name": "WordLearner",
-  "description": "A fun game for kids to learn words with interactive objects on images.",
+  "name": "WordBubbles: Learn & Play",
+  "short_name": "WordBubbles",
+  "description": "A fun educational game where children learn words through interactive floating bubbles!",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f0f0f0",
