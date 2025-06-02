@@ -4,12 +4,25 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 async function speak(text, options = {}) {
   if (window.Capacitor) {
     // Mobile app - use Capacitor plugin
-    await TextToSpeech.speak({
-      text: text,
-      lang: options.lang || 'en-US',
-      rate: options.rate || 1.0,
-      pitch: options.pitch || 1.0,
-      volume: options.volume || 1.0
+    return new Promise(async (resolve, reject) => {
+      const speakPromise = TextToSpeech.speak({
+        text: text,
+        lang: options.lang || 'en-US',
+        rate: options.rate || 1.0,
+        pitch: options.pitch || 1.0,
+        volume: options.volume || 1.0
+      });
+
+      const timeoutPromise = new Promise((_, rejectTimeout) => {
+        setTimeout(() => rejectTimeout(new Error('Speech synthesis timed out')), 10000); // 10-second timeout
+      });
+
+      try {
+        await Promise.race([speakPromise, timeoutPromise]);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
     });
   } else {
     // Web browser - use Web Speech API
@@ -249,28 +262,21 @@ async function speakWord(word, element) {
         element.classList.add('active');
     }
 
-    try {
-        await speak(word, {
-            lang: 'en-US',
-            rate: 0.9,
-            pitch: 1.0,
-            volume: 1.0
-        });
-        
-        handleWordRemoval();
-    } catch (error) {
-        console.warn("Speech synthesis failed:", error);
-        alert("Sorry, speech synthesis failed. Please try again!");
-        if (element) {
-            element.classList.remove('active');
-        }
-    }
-
-    function handleWordRemoval() {
+    // Define handleWordRemovalInternal here or ensure it's accessible.
+    // For this change, we'll keep it nested to maintain its current access to 'element' and 'imageArea'.
+    function handleWordRemovalInternal() {
+        // Check if element still exists and is part of the DOM
         if (element && element.parentNode) {
-            element.classList.remove('active');
+            element.classList.remove('active'); // Safe to call if element exists
             element.remove();
+        } else if (element && !element.parentNode) {
+            // Element exists but is detached, ensure active class is removed if it was added
+            // This case might be redundant if removal always happens through here,
+            // but good for robustness.
+            element.classList.remove('active');
         }
+
+        // The rest of the original handleWordRemoval logic
         if (imageArea) {
             const remainingObjects = imageArea.querySelectorAll('.teachable-object');
             if (remainingObjects.length === 0) {
@@ -290,6 +296,26 @@ async function speakWord(word, element) {
                 }
             }
         }
+    }
+
+    try {
+        await speak(word, {
+            lang: 'en-US',
+            rate: 0.9,
+            pitch: 1.0,
+            volume: 1.0
+        });
+    } catch (error) {
+        console.warn("Speech synthesis failed:", error);
+        // Potentially remove the alert or make it less intrusive if timeout is a common case
+        if (error.message === 'Speech synthesis timed out') {
+            console.log("Speech timed out, proceeding with cleanup.");
+        } else {
+            alert("Sorry, speech synthesis failed. Please try again!");
+        }
+        // Element's 'active' class is handled in finally/handleWordRemovalInternal
+    } finally {
+        handleWordRemovalInternal();
     }
 }
 
