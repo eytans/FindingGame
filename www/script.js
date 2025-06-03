@@ -1,47 +1,99 @@
-import { TextToSpeech } from '@capacitor-community/text-to-speech';
+let currentSpeechElement = null;
 
 // Cross-platform speech wrapper
-async function speak(text, options = {}) {
-  if (window.Capacitor) {
-    // Mobile app - use Capacitor plugin
-    return new Promise(async (resolve, reject) => {
-      const speakPromise = TextToSpeech.speak({
+async function speak(text, options = {}, element = null) {
+  // Clean up previous speech if there was one
+  if (currentSpeechElement && currentSpeechElement !== element) {
+    console.log("Cleaning up previous speech element");
+    handleWordCleanup(currentSpeechElement);
+  }
+  
+  // Set the current element
+  currentSpeechElement = element;
+  
+  // Calculate timeout based on word length (at least 2 seconds, or 125ms per character)
+  const timeoutMs = Math.max(2000, text.length * 125);
+  
+  let speakPromise;
+  
+  try {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.TextToSpeech) {
+      // Use Capacitor plugin if available
+      speakPromise = window.Capacitor.Plugins.TextToSpeech.speak({
         text: text,
         lang: options.lang || 'en-US',
         rate: options.rate || 1.0,
         pitch: options.pitch || 1.0,
         volume: options.volume || 1.0
       });
-
-      const timeoutPromise = new Promise((_, rejectTimeout) => {
-        setTimeout(() => rejectTimeout(new Error('Speech synthesis timed out')), 10000); // 10-second timeout
+    } else {
+      // Web browser - use Web Speech API
+      speakPromise = new Promise((resolve, reject) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (options.lang) utterance.lang = options.lang;
+        if (options.rate) utterance.rate = options.rate;
+        if (options.pitch) utterance.pitch = options.pitch;
+        if (options.volume) utterance.volume = options.volume;
+        
+        utterance.onend = resolve;
+        utterance.onerror = reject;
+        
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        window.speechSynthesis.speak(utterance);
       });
+    }
 
-      try {
-        await Promise.race([speakPromise, timeoutPromise]);
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
+    const timeoutPromise = new Promise((_, rejectTimeout) => {
+      setTimeout(() => rejectTimeout(new Error('Speech synthesis timed out')), timeoutMs);
     });
-  } else {
-    // Web browser - use Web Speech API
-    return new Promise((resolve, reject) => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (options.lang) utterance.lang = options.lang;
-      if (options.rate) utterance.rate = options.rate;
-      if (options.pitch) utterance.pitch = options.pitch;
-      if (options.volume) utterance.volume = options.volume;
-      
-      utterance.onend = () => resolve();
-      utterance.onerror = (error) => reject(error);
-      
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech
-      window.speechSynthesis.speak(utterance);
-    });
-  }
+    return Promise.race([speakPromise, timeoutPromise])
+        .finally(() => {
+            if (element) {
+                handleWordCleanup(element);
+            }
+        });   
+    
+    } catch (error) {
+        console.error("Error during speech synthesis:", error);
+        if (element) {
+            handleWordCleanup(element);
+        }
+        return Promise.resolve();
+    }
 }
 
+function handleWordCleanup(element) {
+    currentSpeechElement = null;
+    const imageArea = document.getElementById('image-area');
+    console.log("Handling word cleanup for element:", element);
+  
+    // Remove the element if it exists
+    if (element && element.parentNode) {
+        element.classList.remove('active');
+        element.remove();
+    }
+  
+    // Handle remaining objects and game state
+    if (imageArea) {
+        const remainingObjects = imageArea.querySelectorAll('.teachable-object');
+        if (remainingObjects.length === 0) {
+            setsCompletedCount++;
+            if (setsCompletedCount >= 3) {
+                loadNextImage();
+                setsCompletedCount = 0;
+                wordsClickedCount = 0;
+        
+                const availableNewWords = teachableWords.filter(tw => !currentWords.some(cw => cw.word === tw.word));
+                const shuffledAvailable = availableNewWords.sort(() => 0.5 - Math.random());
+                const newWordsToAdd = shuffledAvailable.slice(0, 6);
+                currentWords.push(...newWordsToAdd);
+                console.log(`Added ${newWordsToAdd.length} new words. Current pool size: ${currentWords.length}`);
+            } else {
+               displayTeachableObjects();
+            }
+        }
+    }
+}
 console.log("WordBubbles: Learn & Play loaded!");
 
 let preloadedImage = null;
@@ -237,18 +289,15 @@ function initializeWordPool() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Preload first image before starting
-    preloadNextImage()
-        .then(() => {
-            loadBackgroundImage();
-            initializeWordPool();
-        })
-        .catch(err => {
-            console.warn('Failed to preload initial image:', err);
-            loadBackgroundImage(); // Fall back to direct loading
-            initializeWordPool();
-        });
-});
+        // Then proceed with other initialization
+        preloadNextImage()
+            .then(() => {
+                loadBackgroundImage();
+            })
+            .finally(() => {
+                initializeWordPool();
+            });
+    });
 
 function loadNextImage() {
     loadBackgroundImage();
@@ -262,60 +311,26 @@ async function speakWord(word, element) {
         element.classList.add('active');
     }
 
-    // Define handleWordRemovalInternal here or ensure it's accessible.
-    // For this change, we'll keep it nested to maintain its current access to 'element' and 'imageArea'.
-    function handleWordRemovalInternal() {
-        // Check if element still exists and is part of the DOM
-        if (element && element.parentNode) {
-            element.classList.remove('active'); // Safe to call if element exists
-            element.remove();
-        } else if (element && !element.parentNode) {
-            // Element exists but is detached, ensure active class is removed if it was added
-            // This case might be redundant if removal always happens through here,
-            // but good for robustness.
-            element.classList.remove('active');
-        }
-
-        // The rest of the original handleWordRemoval logic
-        if (imageArea) {
-            const remainingObjects = imageArea.querySelectorAll('.teachable-object');
-            if (remainingObjects.length === 0) {
-                setsCompletedCount++;
-                if (setsCompletedCount >= 3) {
-                    loadNextImage();
-                    setsCompletedCount = 0;
-                    wordsClickedCount = 0;
-
-                    const availableNewWords = teachableWords.filter(tw => !currentWords.some(cw => cw.word === tw.word));
-                    const shuffledAvailable = availableNewWords.sort(() => 0.5 - Math.random());
-                    const newWordsToAdd = shuffledAvailable.slice(0, 6);
-                    currentWords.push(...newWordsToAdd);
-                    console.log(`Added ${newWordsToAdd.length} new words. Current pool size: ${currentWords.length}`);
-                } else {
-                    displayTeachableObjects();
-                }
-            }
-        }
-    }
-
     try {
         await speak(word, {
             lang: 'en-US',
             rate: 0.9,
             pitch: 1.0,
             volume: 1.0
-        });
+        }, element);
     } catch (error) {
         console.warn("Speech synthesis failed:", error);
-        // Potentially remove the alert or make it less intrusive if timeout is a common case
+        
+        // Always cleanup on error, even if speech failed
+        if (element) {
+            handleWordCleanup(element);
+        }
+        
         if (error.message === 'Speech synthesis timed out') {
-            console.log("Speech timed out, proceeding with cleanup.");
+            console.log("Speech timed out, cleanup completed.");
         } else {
             alert("Sorry, speech synthesis failed. Please try again!");
         }
-        // Element's 'active' class is handled in finally/handleWordRemovalInternal
-    } finally {
-        handleWordRemovalInternal();
     }
 }
 
@@ -325,12 +340,6 @@ function displayTeachableObjects() {
 
     const existingObjects = imageArea.querySelectorAll('.teachable-object');
     existingObjects.forEach(obj => obj.remove());
-
-    // If there's a paragraph (e.g. error message), don't place words on top if it's the only child
-    if (imageArea.childElementCount > 0 && imageArea.firstElementChild && imageArea.firstElementChild.tagName === 'P') {
-        // Potentially adjust word placement or skip adding if error message is prominent
-        // For now, we'll let them overlap or be less visible if background fails.
-    }
 
     // Ensure there are words to display, if not, re-initialize pool (should be rare)
     if (currentWords.length === 0) {
@@ -349,6 +358,7 @@ function displayTeachableObjects() {
         const objectElement = document.createElement('div');
         objectElement.classList.add('teachable-object');
         objectElement.dataset.word = item.word; // Keep this for click functionality
+        objectElement.dataset.clicked = 'false'; // Track if clicked
 
         if (item.iconUrl && (item.iconUrl.startsWith('http') || item.iconUrl.startsWith('https'))) {
             const imgElement = document.createElement('img');
@@ -389,12 +399,14 @@ function displayTeachableObjects() {
         }
 
         objectElement.addEventListener('click', async (event) => {
+            const cond = event.currentTarget.dataset.clicked !== 'true';
+            console.log("Teachable object clicked:", event.currentTarget.dataset.word, cond);
             const clickedWord = event.currentTarget.dataset.word;
-            if (clickedWord && !event.currentTarget.dataset.clicked) { // Add clicked check
+            if (clickedWord && cond) { // Add clicked check
+                event.currentTarget.dataset.clicked = 'true'; // Mark as clicked
                 // Stop its movement by setting dx/dy to 0 before speaking and removing
                 event.currentTarget.dx = 0;
                 event.currentTarget.dy = 0;
-                event.currentTarget.dataset.clicked = 'true'; // Mark as clicked
                 await speakWord(clickedWord, event.currentTarget);
             }
         });
@@ -464,13 +476,13 @@ function getRandomWords(wordsArray, count) {
 }
 
 if ('serviceWorker' in navigator) {
-window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')  // Updated path
-    .then(registration => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    })
-    .catch(error => {
-        console.log('ServiceWorker registration failed: ', error);
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')  // Updated path
+        .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        })
+        .catch(error => {
+            console.log('ServiceWorker registration failed: ', error);
+        });
     });
-});
 }
