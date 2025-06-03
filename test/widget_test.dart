@@ -54,7 +54,7 @@ void main() {
     expect(find.byType(Stack), findsWidgets);
   });
 
-  Future<void> _tapBubble(WidgetTester tester, WordBubble bubble) async {
+  Future<void> tapBubble(WidgetTester tester, WordBubble bubble) async {
     final bubbleFinder = find.text(bubble.word.iconUrl);
     expect(bubbleFinder, findsOneWidget);
     
@@ -64,12 +64,13 @@ void main() {
   }
 
   // Function to tap bubbles by finding their positions
+  // ignore: unused_element
   Future<void> tapAllBubbles(WidgetTester tester, dynamic gameState) async {
     final bubbles = List.from(gameState.bubbles);
     for (final bubble in bubbles) {
       if (!bubble.isClicked) {
         // Tap at the bubble's center position
-        await _tapBubble(tester, bubble);
+        await tapBubble(tester, bubble);
         
         // Wait for speech and cleanup
         await tester.pump(const Duration(milliseconds: 2500));
@@ -190,7 +191,7 @@ void main() {
     // Tap one bubble
     final firstBubble = gameState.bubbles.first;
     
-    await _tapBubble(tester, firstBubble);
+    await tapBubble(tester, firstBubble);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 2500));
     

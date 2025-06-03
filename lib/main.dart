@@ -323,7 +323,6 @@ class _WordBubblesGameState extends State<WordBubblesGame>
       
       _handleWordCleanup(bubble);
     } catch (e) {
-      print('Speech synthesis failed: $e');
       _handleWordCleanup(bubble);
     }
   }
