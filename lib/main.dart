@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -209,7 +211,7 @@ class _WordBubblesGameState extends State<WordBubblesGame>
   void _initializeTts() async {
     flutterTts = FlutterTts();
     await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(0.9);
+    await flutterTts.setSpeechRate(Platform.isAndroid ? 0.5 : 2.0);
     await flutterTts.setPitch(1.0);
     await flutterTts.setVolume(1.0);
   }
