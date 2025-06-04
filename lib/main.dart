@@ -257,13 +257,13 @@ class _WordBubblesGameState extends State<WordBubblesGame>
 
   WordBubble _createWordBubble(TeachableWord word) {
     final screenSize = MediaQuery.of(context).size;
-    final maxX = screenSize.width - bubbleSize;
-    final maxY = screenSize.height - bubbleSize - 100; // Account for app bar
+    final maxX = (screenSize.width - bubbleSize).clamp(bubbleSize, double.infinity);
+    final maxY = (screenSize.height - bubbleSize - 100).clamp(bubbleSize, double.infinity);
     
     return WordBubble(
       word: word,
-      x: random.nextDouble() * maxX.clamp(0, double.infinity),
-      y: random.nextDouble() * maxY.clamp(0, double.infinity),
+      x: random.nextDouble() * maxX,
+      y: random.nextDouble() * maxY,
       dx: (random.nextDouble() - 0.5) * animationSpeed,
       dy: (random.nextDouble() - 0.5) * animationSpeed,
     );
@@ -279,8 +279,8 @@ class _WordBubblesGameState extends State<WordBubblesGame>
     if (!mounted) return;
     
     final screenSize = MediaQuery.of(context).size;
-    final maxX = screenSize.width - bubbleSize;
-    final maxY = screenSize.height - bubbleSize - 100;
+    final maxX = (screenSize.width - bubbleSize).clamp(bubbleSize, double.infinity);
+    final maxY = (screenSize.height - bubbleSize - 100).clamp(bubbleSize, double.infinity);
 
     setState(() {
       for (final bubble in bubbles) {
