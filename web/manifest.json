@@ -1,11 +1,11 @@
 {
-    "name": "wordbubbles",
-    "short_name": "wordbubbles",
+    "name": "Word Bubbles: Learn & Play",
+    "short_name": "WordBubbles",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A fun educational game where children learn words through interactive floating bubbles!",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
