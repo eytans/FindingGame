@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">WordBubbles: Learn &amp; Play</string>
-    <string name="title_activity_main">WordBubbles: Learn &amp; Play</string>
-    <string name="package_name">il.co.singher.wordbubbles</string>
-    <string name="custom_url_scheme">il.co.singher.wordbubbles</string>
-</resources>
