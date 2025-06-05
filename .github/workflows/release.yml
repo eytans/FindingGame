@@ -52,6 +52,9 @@ jobs:
       - name: Build web app
         run: flutter build web --release
 
+      - name: Copy privacy policy to web build
+        run: cp privacy-policy.html build/web/privacy-policy.html
+
       - name: Create web archive
         run: |
           cd build/web

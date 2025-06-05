@@ -58,6 +58,9 @@ jobs:
       - name: Build web app
         run: flutter build web --release --base-href="/WordBubbles/" --output-dir="www"
 
+      - name: Copy privacy policy
+        run: cp privacy-policy.html www/privacy-policy.html
+
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
 
