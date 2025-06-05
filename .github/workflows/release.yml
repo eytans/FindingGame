@@ -1,0 +1,160 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+  workflow_dispatch:  # Allows manual triggering
+
+permissions:
+  contents: write  # Required for creating releases
+  pages: write
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.1'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+  build-web:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.1'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build web app
+        run: flutter build web --release
+
+      - name: Create web archive
+        run: |
+          cd build/web
+          zip -r ../../wordbubbles-web-${{ github.ref_name }}.zip .
+          cd ../..
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: wordbubbles-web-${{ github.ref_name }}.zip
+
+  build-apk:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.1'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk wordbubbles-${{ github.ref_name }}.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-build
+          path: wordbubbles-${{ github.ref_name }}.apk
+
+  create-release:
+    needs: [build-web, build-apk]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+
+      - name: Download APK build
+        uses: actions/download-artifact@v4
+        with:
+          name: apk-build
+
+      - name: Get version from pubspec.yaml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: WordBubbles ${{ steps.get_version.outputs.version }}
+          body: |
+            ## WordBubbles Release ${{ steps.get_version.outputs.version }}
+            
+            ### What's New
+            - Bug fixes and improvements
+            
+            ### Downloads
+            - **Web Version**: Download the web build and serve it with any web server
+            - **Android APK**: Install directly on Android devices
+            
+            ### Installation Instructions
+            
+            #### Web Version
+            1. Download the web build zip file
+            2. Extract the contents
+            3. Serve the files using any web server (e.g., `python3 -m http.server 8000`)
+            4. Open your browser and navigate to the server address
+            
+            #### Android APK
+            1. Download the APK file
+            2. Enable "Install from unknown sources" in your Android settings
+            3. Install the APK file
+            
+            ### System Requirements
+            - **Web**: Modern web browser with JavaScript enabled
+            - **Android**: Android 5.0 (API level 21) or higher
+          files: |
+            wordbubbles-web-${{ github.ref_name }}.zip
+            wordbubbles-${{ github.ref_name }}.apk
+          draft: false
+          prerelease: false
