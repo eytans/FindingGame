@@ -1,10 +1,10 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:math';
 import 'dart:async';
+import 'dart:convert';
 
 void main() {
   runApp(const WordBubblesApp());
@@ -63,6 +63,140 @@ class WordBubble {
   });
 }
 
+class AnimatedBubblesLayer extends StatefulWidget {
+  final List<WordBubble> bubbles;
+  final Function(WordBubble) onBubbleTap;
+  final double bubbleSize;
+
+  const AnimatedBubblesLayer({
+    super.key,
+    required this.bubbles,
+    required this.onBubbleTap,
+    required this.bubbleSize,
+  });
+
+  @override
+  State<AnimatedBubblesLayer> createState() => _AnimatedBubblesLayerState();
+}
+
+class _AnimatedBubblesLayerState extends State<AnimatedBubblesLayer> with TickerProviderStateMixin {
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 16),
+      vsync: this,
+    );
+    _startAnimation();
+  }
+
+  void _startAnimation() {
+    _animationController.repeat();
+    _animationController.addListener(_updateBubblePositions);
+  }
+
+  void _updateBubblePositions() {
+    if (!mounted) return;
+    
+    final screenSize = MediaQuery.of(context).size;
+    final maxX = (screenSize.width - widget.bubbleSize).clamp(widget.bubbleSize, double.infinity);
+    final maxY = (screenSize.height - widget.bubbleSize - 100).clamp(widget.bubbleSize, double.infinity);
+
+    bool needsUpdate = false;
+    
+    for (final bubble in widget.bubbles) {
+      if (bubble.isClicked) continue;
+
+      // Update position
+      final newX = bubble.x + bubble.dx;
+      final newY = bubble.y + bubble.dy;
+
+      // Bounce off walls
+      if (newX <= 0 || newX >= maxX) {
+        bubble.dx *= -1;
+        bubble.x = newX.clamp(0, maxX);
+        needsUpdate = true;
+      } else {
+        bubble.x = newX;
+        needsUpdate = true;
+      }
+      
+      if (newY <= 0 || newY >= maxY) {
+        bubble.dy *= -1;
+        bubble.y = newY.clamp(0, maxY);
+        needsUpdate = true;
+      } else {
+        bubble.y = newY;
+        needsUpdate = true;
+      }
+    }
+
+    // Only call setState if positions actually changed
+    if (needsUpdate) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.removeListener(_updateBubblePositions);
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: widget.bubbles.map((bubble) => Positioned(
+        left: bubble.x,
+        top: bubble.y,
+        child: GestureDetector(
+          onTap: () => widget.onBubbleTap(bubble),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.elasticOut,
+            width: widget.bubbleSize,
+            height: widget.bubbleSize,
+            decoration: BoxDecoration(
+              color: bubble.isActive 
+                  ? Colors.white 
+                  : Colors.white.withValues(alpha: 0.92),
+              border: Border.all(
+                color: bubble.isActive 
+                    ? const Color(0xFFFFA500) 
+                    : const Color(0xFFFF6347),
+                width: 3,
+              ),
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: bubble.isActive 
+                      ? const Color(0xFFFFD700).withValues(alpha: 0.6)
+                      : Colors.black.withValues(alpha: 0.25),
+                  blurRadius: bubble.isActive ? 15 : 8,
+                  offset: const Offset(3, 3),
+                ),
+              ],
+            ),
+            transform: bubble.isActive 
+                ? (Matrix4.identity()..scale(1.1))
+                : Matrix4.identity(),
+            child: Center(
+              child: Text(
+                bubble.word.iconUrl,
+                style: const TextStyle(fontSize: 48),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      )).toList(),
+    );
+  }
+}
+
 class WordBubblesGame extends StatefulWidget {
   const WordBubblesGame({super.key});
 
@@ -70,14 +204,12 @@ class WordBubblesGame extends StatefulWidget {
   State<WordBubblesGame> createState() => _WordBubblesGameState();
 }
 
-class _WordBubblesGameState extends State<WordBubblesGame>
-    with TickerProviderStateMixin {
+class _WordBubblesGameState extends State<WordBubblesGame> {
   late FlutterTts flutterTts;
-  late AnimationController _animationController;
-  late Timer _animationTimer;
   
   List<WordBubble> bubbles = [];
   String? currentBackgroundImage;
+  List<int>? _imageIds;
   int wordsClickedCount = 0;
   int setsCompletedCount = 0;
   List<TeachableWord> currentWords = [];
@@ -86,6 +218,10 @@ class _WordBubblesGameState extends State<WordBubblesGame>
   static const int maxObjectsOnScreen = 3;
   static const double bubbleSize = 120.0;
   static const double animationSpeed = 2.0;
+  
+  // Add logging for image loading
+  int imageLoadCount = 0;
+  List<String> imageLoadLog = [];
 
   final List<TeachableWord> teachableWords = [
     // Original 20
@@ -189,14 +325,14 @@ class _WordBubblesGameState extends State<WordBubblesGame>
     TeachableWord(word: "pencil", type: "tool", iconUrl: "✏️"),
   ];
 
+  String? _currentImagePath;
+  bool _isLoadingImage = false;
+
   @override
   void initState() {
     super.initState();
     _initializeTts();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 16),
-      vsync: this,
-    );
+    _loadImageIds();
   }
 
   @override
@@ -204,7 +340,6 @@ class _WordBubblesGameState extends State<WordBubblesGame>
     super.didChangeDependencies();
     if (bubbles.isEmpty) {
       _initializeGame();
-      _startAnimation();
     }
   }
 
@@ -228,11 +363,34 @@ class _WordBubblesGameState extends State<WordBubblesGame>
     currentWords = shuffledWords.take(20).toList();
   }
 
-  void _loadNextImage() {
-    final imageId = random.nextInt(387) + 1;
-    setState(() {
-      currentBackgroundImage = 'https://picsum.photos/id/$imageId/800/600';
-    });
+  Future<void> _loadImageIds() async {
+    try {
+      final String jsonString = await rootBundle.loadString('assets/config/image_ids.json');
+      final Map<String, dynamic> config = json.decode(jsonString);
+      setState(() {
+        _imageIds = List<int>.from(config['imageIds']);
+      });
+      _loadNextImage();
+    } catch (e) {
+      print('Error loading image IDs: $e');
+    }
+  }
+
+  void _loadNextImage() async {
+    if (_imageIds == null || _imageIds!.isEmpty || _isLoadingImage) return;
+    
+    _isLoadingImage = true;
+    final imageId = _imageIds![random.nextInt(_imageIds!.length)];
+    final newPath = 'assets/images/picsum/$imageId.jpg';
+    
+    // Simply set the new image path - Flutter will handle caching and optimization
+    if (mounted) {
+      setState(() {
+        _currentImagePath = newPath;
+        currentBackgroundImage = newPath;
+        _isLoadingImage = false;
+      });
+    }
   }
 
   void _displayTeachableObjects() {
@@ -267,40 +425,6 @@ class _WordBubblesGameState extends State<WordBubblesGame>
       dx: (random.nextDouble() - 0.5) * animationSpeed,
       dy: (random.nextDouble() - 0.5) * animationSpeed,
     );
-  }
-
-  void _startAnimation() {
-    _animationTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      _updateBubblePositions();
-    });
-  }
-
-  void _updateBubblePositions() {
-    if (!mounted) return;
-    
-    final screenSize = MediaQuery.of(context).size;
-    final maxX = (screenSize.width - bubbleSize).clamp(bubbleSize, double.infinity);
-    final maxY = (screenSize.height - bubbleSize - 100).clamp(bubbleSize, double.infinity);
-
-    setState(() {
-      for (final bubble in bubbles) {
-        if (bubble.isClicked) continue;
-
-        // Update position
-        bubble.x += bubble.dx;
-        bubble.y += bubble.dy;
-
-        // Bounce off walls
-        if (bubble.x <= 0 || bubble.x >= maxX) {
-          bubble.dx *= -1;
-          bubble.x = bubble.x.clamp(0, maxX);
-        }
-        if (bubble.y <= 0 || bubble.y >= maxY) {
-          bubble.dy *= -1;
-          bubble.y = bubble.y.clamp(0, maxY);
-        }
-      }
-    });
   }
 
   Future<void> _speakWord(WordBubble bubble) async {
@@ -358,16 +482,17 @@ class _WordBubblesGameState extends State<WordBubblesGame>
 
   @override
   void dispose() {
-    _animationController.dispose();
-    _animationTimer.cancel();
     flutterTts.stop();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       body: Container(
+        width: size.width,
+        height: size.height,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
@@ -392,77 +517,33 @@ class _WordBubblesGameState extends State<WordBubblesGame>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  // Background Image
-                  if (currentBackgroundImage != null)
+                  // Static Background Image (not rebuilt on animation)
+                  if (_currentImagePath != null)
                     Positioned.fill(
-                      child: CachedNetworkImage(
-                        imageUrl: currentBackgroundImage!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: Text(
-                              'Could not load image.\nEnjoy the words on a plain background!',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.black54),
-                            ),
-                          ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        child: Image.asset(
+                          _currentImagePath!,
+                          key: ValueKey<String>(_currentImagePath!),
+                          width: size.width,
+                          height: size.height,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          cacheWidth: (size.width * 1.5).round(),
+                          cacheHeight: (size.height * 1.5).round(),
+                          filterQuality: FilterQuality.medium,
                         ),
                       ),
                     ),
                   
-                  // Word Bubbles
-                  ...bubbles.map((bubble) => Positioned(
-                    left: bubble.x,
-                    top: bubble.y,
-                    child: GestureDetector(
-                      onTap: () => _speakWord(bubble),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.elasticOut,
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        decoration: BoxDecoration(
-                          color: bubble.isActive 
-                              ? Colors.white 
-                              : Colors.white.withValues(alpha: 0.92),
-                          border: Border.all(
-                            color: bubble.isActive 
-                                ? const Color(0xFFFFA500) 
-                                : const Color(0xFFFF6347),
-                            width: 3,
-                          ),
-                          borderRadius: BorderRadius.circular(15),
-                          boxShadow: [
-                            BoxShadow(
-                              color: bubble.isActive 
-                                  ? const Color(0xFFFFD700).withValues(alpha: 0.6)
-                                  : Colors.black.withValues(alpha: 0.25),
-                              blurRadius: bubble.isActive ? 15 : 8,
-                              offset: const Offset(3, 3),
-                            ),
-                          ],
-                        ),
-                        transform: bubble.isActive 
-                            ? (Matrix4.identity()..scale(1.1))
-                            : Matrix4.identity(),
-                        child: Center(
-                          child: Text(
-                            bubble.word.iconUrl,
-                            style: const TextStyle(fontSize: 48),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )),
+                  // Animated Bubbles Layer (isolated animation)
+                  AnimatedBubblesLayer(
+                    bubbles: bubbles,
+                    onBubbleTap: _speakWord,
+                    bubbleSize: bubbleSize,
+                  ),
                   
                   // Title
                   Positioned(
@@ -494,6 +575,30 @@ class _WordBubblesGameState extends State<WordBubblesGame>
                             ],
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Debug Log Overlay
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (imageLoadLog.isNotEmpty)
+                            ...imageLoadLog.take(3).map((log) => Text(
+                              log,
+                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                            )),
+                        ],
                       ),
                     ),
                   ),

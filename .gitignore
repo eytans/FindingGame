@@ -90,3 +90,4 @@ report.xml
 **/*.ipr
 **/misc.xml
 starport_template/ios/build
+venv/

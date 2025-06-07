@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:wordbubbles/main.dart';
 
@@ -135,23 +134,6 @@ void main() {
   //   print('Initial image: $initialImageUrl');
   //   print('New image: $newImageUrl');
   // });
-  
-  testWidgets('Background image loading test', (WidgetTester tester) async {
-    // Build the app
-    await tester.pumpWidget(const WordBubblesApp());
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    
-    // Verify background image widget exists
-    expect(find.byType(CachedNetworkImage), findsOneWidget);
-    
-    // Get the game state and verify image URL is set
-    final gameState = tester.state(find.byType(WordBubblesGame)) as dynamic;
-    expect(gameState.currentBackgroundImage, isNotNull);
-    expect(gameState.currentBackgroundImage, contains('picsum.photos'));
-    
-    print('Background image loading test completed successfully!');
-  });
   
   testWidgets('Word pool management test', (WidgetTester tester) async {
     // Build the app

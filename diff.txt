@@ -1,0 +1,148 @@
+diff --git a/lib/main.dart b/lib/main.dart
+index 4f0fa7c..addb5ed 100644
+--- a/lib/main.dart
++++ b/lib/main.dart
+@@ -1,10 +1,11 @@
+ import 'dart:io';
+-
++import 'dart:ui' as ui;
+ import 'package:flutter/material.dart';
++import 'package:flutter/services.dart';
+ import 'package:flutter_tts/flutter_tts.dart';
+-import 'package:cached_network_image/cached_network_image.dart';
+ import 'dart:math';
+ import 'dart:async';
++import 'dart:convert';
+ 
+ void main() {
+   runApp(const WordBubblesApp());
+@@ -70,14 +71,14 @@ class WordBubblesGame extends StatefulWidget {
+   State<WordBubblesGame> createState() => _WordBubblesGameState();
+ }
+ 
+-class _WordBubblesGameState extends State<WordBubblesGame>
+-    with TickerProviderStateMixin {
++class _WordBubblesGameState extends State<WordBubblesGame> with TickerProviderStateMixin {
+   late FlutterTts flutterTts;
+   late AnimationController _animationController;
+   late Timer _animationTimer;
+   
+   List<WordBubble> bubbles = [];
+   String? currentBackgroundImage;
++  List<int>? _imageIds;
+   int wordsClickedCount = 0;
+   int setsCompletedCount = 0;
+   List<TeachableWord> currentWords = [];
+@@ -189,6 +190,9 @@ class _WordBubblesGameState extends State<WordBubblesGame>
+     TeachableWord(word: "pencil", type: "tool", iconUrl: "✏️"),
+   ];
+ 
++  String? _currentImagePath;
++  bool _isLoadingImage = false;
++
+   @override
+   void initState() {
+     super.initState();
+@@ -197,6 +201,7 @@ class _WordBubblesGameState extends State<WordBubblesGame>
+       duration: const Duration(milliseconds: 16),
+       vsync: this,
+     );
++    _loadImageIds();
+   }
+ 
+   @override
+@@ -228,11 +233,34 @@ class _WordBubblesGameState extends State<WordBubblesGame>
+     currentWords = shuffledWords.take(20).toList();
+   }
+ 
+-  void _loadNextImage() {
+-    final imageId = random.nextInt(387) + 1;
+-    setState(() {
+-      currentBackgroundImage = 'https://picsum.photos/id/$imageId/800/600';
+-    });
++  Future<void> _loadImageIds() async {
++    try {
++      final String jsonString = await rootBundle.loadString('assets/config/image_ids.json');
++      final Map<String, dynamic> config = json.decode(jsonString);
++      setState(() {
++        _imageIds = List<int>.from(config['imageIds']);
++      });
++      _loadNextImage();
++    } catch (e) {
++      print('Error loading image IDs: $e');
++    }
++  }
++
++  void _loadNextImage() async {
++    if (_imageIds == null || _imageIds!.isEmpty || _isLoadingImage) return;
++    
++    _isLoadingImage = true;
++    final imageId = _imageIds![random.nextInt(_imageIds!.length)];
++    final newPath = 'assets/images/picsum/$imageId.jpg';
++    
++    // Simply set the new image path - Flutter will handle caching and optimization
++    if (mounted) {
++      setState(() {
++        _currentImagePath = newPath;
++        currentBackgroundImage = newPath;
++        _isLoadingImage = false;
++      });
++    }
+   }
+ 
+   void _displayTeachableObjects() {
+@@ -366,8 +394,11 @@ class _WordBubblesGameState extends State<WordBubblesGame>
+ 
+   @override
+   Widget build(BuildContext context) {
++    final size = MediaQuery.of(context).size;
+     return Scaffold(
+       body: Container(
++        width: size.width,
++        height: size.height,
+         decoration: BoxDecoration(
+           gradient: const LinearGradient(
+             begin: Alignment.topLeft,
+@@ -392,28 +423,23 @@ class _WordBubblesGameState extends State<WordBubblesGame>
+             child: ClipRRect(
+               borderRadius: BorderRadius.circular(18),
+               child: Stack(
++                fit: StackFit.expand,
+                 children: [
+                   // Background Image
+-                  if (currentBackgroundImage != null)
++                  if (_currentImagePath != null)
+                     Positioned.fill(
+-                      child: CachedNetworkImage(
+-                        imageUrl: currentBackgroundImage!,
+-                        fit: BoxFit.cover,
+-                        placeholder: (context, url) => Container(
+-                          color: Colors.grey[300],
+-                          child: const Center(
+-                            child: CircularProgressIndicator(),
+-                          ),
+-                        ),
+-                        errorWidget: (context, url, error) => Container(
+-                          color: Colors.grey[300],
+-                          child: const Center(
+-                            child: Text(
+-                              'Could not load image.\nEnjoy the words on a plain background!',
+-                              textAlign: TextAlign.center,
+-                              style: TextStyle(color: Colors.black54),
+-                            ),
+-                          ),
++                      child: AnimatedSwitcher(
++                        duration: const Duration(milliseconds: 500),
++                        child: Image.asset(
++                          _currentImagePath!,
++                          key: ValueKey<String>(_currentImagePath!),
++                          width: size.width,
++                          height: size.height,
++                          fit: BoxFit.cover,
++                          alignment: Alignment.center,
++                          cacheWidth: (size.width * 1.5).round(),
++                          cacheHeight: (size.height * 1.5).round(),
++                          filterQuality: FilterQuality.medium,
+                         ),
+                       ),
+                     ),
