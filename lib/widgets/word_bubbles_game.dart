@@ -235,16 +235,22 @@ class _WordBubblesGameState extends State<WordBubblesGame> {
                     Positioned.fill(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 500),
-                        child: Image.asset(
-                          _currentImagePath!,
-                          key: ValueKey<String>(_currentImagePath!),
-                          width: size.width,
-                          height: size.height,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                          cacheWidth: (size.width * 1.5).round(),
-                          cacheHeight: (size.height * 1.5).round(),
-                          filterQuality: FilterQuality.medium,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Image.asset(
+                              _currentImagePath!,
+                              key: ValueKey<String>(_currentImagePath!),
+                              width: size.width,
+                              height: size.height,
+                              fit: constraints.maxWidth > size.width || constraints.maxHeight > size.height
+                                  ? BoxFit.contain
+                                  : BoxFit.cover,
+                              alignment: Alignment.center,
+                              cacheWidth: (size.width * 1.5).round(),
+                              cacheHeight: (size.height * 1.5).round(),
+                              filterQuality: FilterQuality.medium,
+                            );
+                          },
                         ),
                       ),
                     ),
