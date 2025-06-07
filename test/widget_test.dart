@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:wordbubbles/main.dart';
+import 'package:wordbubbles/models/word_models.dart';
+import 'package:wordbubbles/widgets/word_bubbles_game.dart';
+import 'package:wordbubbles/data/teachable_words_data.dart';
 
 void main() {
   testWidgets('WordBubbles app smoke test', (WidgetTester tester) async {
@@ -146,7 +149,7 @@ void main() {
     
     // Verify initial word pool
     expect(gameState.currentWords.length, equals(20));
-    expect(gameState.teachableWords.length, greaterThan(80)); // Should have many words available
+    expect(teachableWords.length, greaterThan(80)); // Should have many words available
     
     // Verify bubbles are created from current words
     final bubbles = gameState.bubbles as List;
